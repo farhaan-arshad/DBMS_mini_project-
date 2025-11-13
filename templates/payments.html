@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .page-header h2 {
+    font-size: 2rem;
+    color: #ff2e2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .modal-content {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border-radius: 12px;
+    border: 1px solid #374151;
+  }
+
+  .modal-header {
+    background-color: #ff2e2e !important;
+    border-bottom: 1px solid #374151;
+  }
+
+  .form-control,
+  .form-select {
+    background-color: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #ff2e2e;
+    box-shadow: 0 0 8px rgba(255, 46, 46, 0.2);
+    color: #f3f4f6;
+    background-color: #111827;
+  }
+
+  .form-label {
+    color: #f3f4f6;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #374151;
+  }
+
+  .btn-close-white {
+    filter: brightness(0) invert(1);
+  }
+</style>
+
+<div class="page-header">
+  <h2>💳 Payments</h2>
+  {% if session.get('role') != 'viewer' %}
+  <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Payment</button>
+  {% endif %}
+</div>
+
+<div class="table-container">
+  <table class="table table-striped align-middle" id="paymentsTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Member</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Method</th>
+        <th>Receipt No</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Add Payment Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="addForm">
+        <div class="modal-header bg-danger text-light">
+          <h5 class="modal-title">Add New Payment</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Member ID</label>
+            <input type="number" name="Member_ID" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amount</label>
+            <input type="number" name="Amount" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" name="Date" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Payment Method</label>
+            <select name="Method" class="form-select" required>
+              <option value="Cash">Cash</option>
+              <option value="Card">Card</option>
+              <option value="UPI">UPI</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Receipt No</label>
+            <input type="text" name="Receipt_No" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-add">Add Payment</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function loadPayments() {
+    const res = await fetch("/api/payments");
+    const data = await res.json();
+    const tbody = document.querySelector("#paymentsTable tbody");
+    tbody.innerHTML = "";
+    data.forEach(row => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${row.Payment_ID}</td>
+          <td>${row.MemberName}</td>
+          <td>₹${parseFloat(row.Amount).toFixed(2)}</td>
+          <td>${new Date(row.Date).toLocaleDateString()}</td>
+          <td>${row.Method}</td>
+          <td>${row.Receipt_No || "-"}</td>
+        </tr>
+      `;
+    });
+  }
+
+  document.getElementById("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = Object.fromEntries(new FormData(e.target).entries());
+
+    const res = await fetch("/api/payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      alert("✅ Payment added successfully!");
+      e.target.reset();
+      document.querySelector("#addModal .btn-close").click();
+      loadPayments();
+    } else {
+      alert("❌ " + result.error);
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", loadPayments);
+</script>
+{% endblock %}

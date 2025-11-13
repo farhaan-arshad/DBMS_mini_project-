@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>📊 Advanced Queries</h2>
+</div>
+
+<!-- Tab Navigation -->
+<div class="query-tabs">
+  <button class="query-tab active" onclick="showTab(event, 'join')">
+    🔗 JOIN Query
+  </button>
+  <button class="query-tab" onclick="showTab(event, 'nested')">
+    📦 NESTED Query
+  </button>
+  <button class="query-tab" onclick="showTab(event, 'aggregate')">
+    📈 AGGREGATE Query
+  </button>
+</div>
+
+<!-- JOIN Query Tab -->
+<div id="join" class="query-content active">
+  <div class="query-card">
+    <div class="query-title">🔗 JOIN Query</div>
+    
+    <div class="query-purpose">
+      <strong>Purpose:</strong> Shows all member assignments with complete details including the assigned trainer, workout plan, and gym information. This query joins 5 tables to provide a comprehensive view of member-trainer relationships.
+    </div>
+
+    <div id="join-table-container" class="table-wrapper"></div>
+    
+    <div class="query-info">
+      📋 <strong>Tables:</strong> Assigns, Members, Trainers, Workout_Plan, Gym | 
+      <strong>Type:</strong> INNER JOIN (5 tables)
+    </div>
+  </div>
+</div>
+
+<!-- NESTED Query Tab -->
+<div id="nested" class="query-content">
+  <div class="query-card">
+    <div class="query-title">📦 NESTED Query</div>
+    
+    <div class="query-purpose">
+      <strong>Purpose:</strong> Evaluates trainer performance by analyzing their assigned members' total payments. This uses a subquery to calculate payment aggregates, showing which trainers have the most valuable members. Helpful for performance evaluation and incentive planning.
+    </div>
+
+    <div id="nested-table-container" class="table-wrapper"></div>
+    
+    <div class="query-info">
+      📋 <strong>Tables:</strong> Trainers, Gym, Assigns, Payments | 
+      <strong>Type:</strong> LEFT JOIN with Subquery | 
+      <strong>Aggregates:</strong> SUM, COUNT(DISTINCT)
+    </div>
+  </div>
+</div>
+
+<!-- AGGREGATE Query Tab -->
+<div id="aggregate" class="query-content">
+  <div class="query-card">
+    <div class="query-title">📈 AGGREGATE Query</div>
+    
+    <div class="query-purpose">
+      <strong>Purpose:</strong> Provides gym-level business intelligence metrics including total members, average membership fees, and total revenue. This query demonstrates GROUP BY with multiple aggregate functions, useful for comparing performance across different gyms and strategic decision-making.
+    </div>
+
+    <div id="aggregate-table-container" class="table-wrapper"></div>
+    
+    <div class="query-info">
+      📋 <strong>Tables:</strong> Gym, Members, Payments, Trainers | 
+      <strong>Type:</strong> GROUP BY with Aggregation | 
+      <strong>Functions:</strong> COUNT, SUM, AVG, ROUND, NULLIF
+    </div>
+  </div>
+</div>
+
+<style>
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .page-header h2 {
+    font-size: 2rem;
+    color: #ff2e2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .query-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #374151;
+    flex-wrap: wrap;
+  }
+
+  .query-tab {
+    padding: 12px 20px;
+    background-color: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    margin-bottom: -2px;
+  }
+
+  .query-tab:hover {
+    color: #f3f4f6;
+    border-bottom-color: rgba(255, 46, 46, 0.5);
+  }
+
+  .query-tab.active {
+    color: #ff2e2e;
+    border-bottom-color: #ff2e2e;
+  }
+
+  .query-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  .query-content.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .query-card {
+    background-color: #1f2937;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    border: 1px solid #374151;
+  }
+
+  .query-title {
+    font-size: 1.5rem;
+    color: #ff2e2e;
+    margin-bottom: 15px;
+    font-weight: 700;
+  }
+
+  .query-purpose {
+    background-color: #111827;
+    border-left: 4px solid #ff2e2e;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #f3f4f6;
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .query-purpose strong {
+    color: #ff2e2e;
+    font-weight: 700;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin-top: 20px;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 40px;
+    color: #9ca3af;
+    font-size: 1rem;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 46, 46, 0.3);
+    border-radius: 50%;
+    border-top-color: #ff2e2e;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .query-info {
+    background-color: #374151;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 0.85rem;
+    margin-top: 15px;
+    line-height: 1.5;
+  }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(evt, tabName) {
+    // Hide all tab contents
+    const contents = document.getElementsByClassName('query-content');
+    for (let i = 0; i < contents.length; i++) {
+      contents[i].classList.remove('active');
+    }
+
+    // Deactivate all tabs
+    const tabs = document.getElementsByClassName('query-tab');
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.remove('active');
+    }
+
+    // Show selected tab and activate its button
+    document.getElementById(tabName).classList.add('active');
+    evt.currentTarget.classList.add('active');
+
+    // Load data for the tab
+    if (tabName === 'join') {
+      loadJoinQuery();
+    } else if (tabName === 'nested') {
+      loadNestedQuery();
+    } else if (tabName === 'aggregate') {
+      loadAggregateQuery();
+    }
+  }
+
+  // ===== JOIN QUERY =====
+  async function loadJoinQuery() {
+    const container = document.getElementById('join-table-container');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading data...</div>';
+
+    try {
+      const response = await fetch('/api/queries/join');
+      const data = await response.json();
+
+      if (data.error) {
+        container.innerHTML = `<div class="no-data">❌ ${data.error}</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = '<div class="no-data">📭 No data available</div>';
+        return;
+      }
+
+      let table = `
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Member ID</th>
+              <th>Member Name</th>
+              <th>Trainer Name</th>
+              <th>Plan Name</th>
+              <th>Gym Name</th>
+              <th>Assigned Date</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.forEach(row => {
+        table += `
+          <tr>
+            <td><span class="badge badge-info">${row.Member_ID}</span></td>
+            <td>${row.Member_Name}</td>
+            <td>${row.Trainer_Name}</td>
+            <td><span class="badge badge-secondary">${row.Plan_Name}</span></td>
+            <td><span class="badge badge-primary">${row.Gym_Name}</span></td>
+            <td>${new Date(row.Assigned_Date).toLocaleDateString()}</td>
+          </tr>
+        `;
+      });
+
+      table += `
+            </tbody>
+          </table>
+      `;
+
+      container.innerHTML = table;
+    } catch (error) {
+      container.innerHTML = `<div class="no-data">❌ Error: ${error.message}</div>`;
+    }
+  }
+
+  // ===== NESTED QUERY =====
+  async function loadNestedQuery() {
+    const container = document.getElementById('nested-table-container');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading data...</div>';
+
+    try {
+      const response = await fetch('/api/queries/nested');
+      const data = await response.json();
+
+      if (data.error) {
+        container.innerHTML = `<div class="no-data">❌ ${data.error}</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = '<div class="no-data">📭 No data available</div>';
+        return;
+      }
+
+      let table = `
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Trainer ID</th>
+              <th>Trainer Name</th>
+              <th>Gym Name</th>
+              <th>Specialization</th>
+              <th>Total Member Payments</th>
+              <th>Members Assigned</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.forEach(row => {
+        const paymentColor = row.Total_Member_Payments > 5000 ? 'badge-success' : 'badge-warning';
+        table += `
+          <tr>
+            <td><span class="badge badge-info">${row.Trainer_ID}</span></td>
+            <td>${row.Trainer_Name}</td>
+            <td><span class="badge badge-primary">${row.Gym_Name}</span></td>
+            <td>${row.Specialization}</td>
+            <td><span class="badge ${paymentColor}">₹${parseFloat(row.Total_Member_Payments).toFixed(2)}</span></td>
+            <td><span class="badge badge-secondary">${row.Total_Members_Assigned}</span></td>
+          </tr>
+        `;
+      });
+
+      table += `
+            </tbody>
+          </table>
+      `;
+
+      container.innerHTML = table;
+    } catch (error) {
+      container.innerHTML = `<div class="no-data">❌ Error: ${error.message}</div>`;
+    }
+  }
+
+  // ===== AGGREGATE QUERY =====
+  async function loadAggregateQuery() {
+    const container = document.getElementById('aggregate-table-container');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading data...</div>';
+
+    try {
+      const response = await fetch('/api/queries/aggregate');
+      const data = await response.json();
+
+      if (data.error) {
+        container.innerHTML = `<div class="no-data">❌ ${data.error}</div>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = '<div class="no-data">📭 No data available</div>';
+        return;
+      }
+
+      let table = `
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Gym ID</th>
+              <th>Gym Name</th>
+              <th>Location</th>
+              <th>Total Members</th>
+              <th>Avg Fee</th>
+              <th>Total Revenue</th>
+              <th>Total Trainers</th>
+              <th>Revenue per Member</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.forEach(row => {
+        table += `
+          <tr>
+            <td><span class="badge badge-info">${row.Gym_ID}</span></td>
+            <td><strong>${row.Gym_Name}</strong></td>
+            <td>${row.Location}</td>
+            <td><span class="badge badge-secondary">${row.Total_Members}</span></td>
+            <td>₹${parseFloat(row.Avg_Fee).toFixed(2)}</td>
+            <td><span class="badge badge-success">₹${parseFloat(row.Total_Revenue).toFixed(2)}</span></td>
+            <td><span class="badge badge-primary">${row.Total_Trainers}</span></td>
+            <td>₹${parseFloat(row.Revenue_Per_Member || 0).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      table += `
+            </tbody>
+          </table>
+      `;
+
+      container.innerHTML = table;
+    } catch (error) {
+      container.innerHTML = `<div class="no-data">❌ Error: ${error.message}</div>`;
+    }
+  }
+
+  // Load JOIN query on page load
+  window.addEventListener('DOMContentLoaded', function() {
+    loadJoinQuery();
+  });
+</script>
+{% endblock %}

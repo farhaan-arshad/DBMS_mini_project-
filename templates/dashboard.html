@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .dashboard {
+    text-align: center;
+    color: #f5f5f5;
+    margin-top: 60px;
+  }
+
+  .dashboard h2 {
+    font-size: 32px;
+    color: #ff2e2e;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .dashboard p {
+    color: #bbb;
+    font-size: 16px;
+    margin-bottom: 40px;
+  }
+
+  .stats {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 25px;
+    margin-bottom: 50px;
+  }
+
+  .stat-card {
+    background: #1e1e1e;
+    padding: 25px 30px;
+    border-radius: 12px;
+    width: 220px;
+    text-align: center;
+    transition: 0.3s;
+    border: 1px solid #2a2a2a;
+  }
+
+  .stat-card:hover {
+    background: #242424;
+    border-color: #ff2e2e;
+  }
+
+  .stat-card h4 {
+    font-size: 15px;
+    color: #ccc;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-card p {
+    font-size: 26px;
+    color: #ff2e2e;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .links a {
+    text-decoration: none;
+    background: #2a2a2a;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #f5f5f5;
+    transition: 0.3s;
+    font-weight: 500;
+  }
+
+  .links a:hover {
+    background: #ff2e2e;
+    color: #fff;
+  }
+
+  .admin-tag {
+    background: #ff2e2e;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+</style>
+
+<div class="dashboard">
+  <h2>🏋️ Gym Dashboard</h2>
+  <p>Welcome back, <strong>{{ session.get('user') }}</strong> ({{ session.get('role')|capitalize }})</p>
+
+  <div class="stats">
+    <div class="stat-card">
+      <h4>Total Members</h4>
+      <p id="members-count">--</p>
+    </div>
+    <div class="stat-card">
+      <h4>Pending Payments</h4>
+      <p id="pending-total">--</p>
+    </div>
+    <div class="stat-card">
+      <h4>Total Revenue</h4>
+      <p id="total-revenue">--</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // Fetch APIs
+    const [membersRes, paymentsRes] = await Promise.all([
+      fetch('/api/member_payments'),
+      fetch('/api/payments')
+    ]);
+
+    const members = await membersRes.json();
+    const payments = await paymentsRes.json();
+
+    // --- Total Members
+    document.getElementById("members-count").innerText = members.length;
+
+    // --- Pending Payments
+    let totalPending = 0;
+    members.forEach(m => {
+      totalPending += parseFloat(m.Pending_Balance || 0);
+    });
+    document.getElementById("pending-total").innerText = "₹" + totalPending.toLocaleString();
+
+    // --- Total Revenue
+    let totalRevenue = 0;
+    payments.forEach(p => {
+      totalRevenue += parseFloat(p.Amount || 0);
+    });
+    document.getElementById("total-revenue").innerText = "₹" + totalRevenue.toLocaleString();
+
+  } catch (err) {
+    console.error("Error loading dashboard stats:", err);
+  }
+});
+</script>
+{% endblock %}

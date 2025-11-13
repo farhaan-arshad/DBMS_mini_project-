@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .page-header h2 {
+    font-size: 2rem;
+    color: #ff2e2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  /* Modal Styling */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 50;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+  }
+
+  .modal-content {
+    background-color: #1f2937;
+    margin: auto;
+    padding: 30px;
+    border-radius: 12px;
+    width: 450px;
+    color: white;
+    border: 1px solid #374151;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-content h3 {
+    text-align: center;
+    color: #ff2e2e;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  .modal-content input,
+  .modal-content select {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    outline: none;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.9rem;
+  }
+
+  .modal-content input:focus,
+  .modal-content select:focus {
+    border-color: #ff2e2e;
+    box-shadow: 0 0 8px rgba(255, 46, 46, 0.2);
+  }
+
+  .modal-content select option {
+    background-color: #1f2937;
+    color: white;
+  }
+
+  .modal-content hr {
+    border: 1px solid #374151;
+    margin: 20px 0;
+  }
+
+  .modal-content h4 {
+    color: #ff2e2e;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    margin-top: 15px;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .modal-buttons button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .modal-buttons .btn-save {
+    background-color: #10b981;
+    color: white;
+  }
+
+  .modal-buttons .btn-save:hover {
+    background-color: #059669;
+  }
+
+  .modal-buttons .btn-cancel {
+    background-color: #6b7280;
+    color: white;
+  }
+
+  .modal-buttons .btn-cancel:hover {
+    background-color: #4b5563;
+  }
+
+  .close-btn {
+    color: #ff2e2e;
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+    font-weight: 300;
+    transition: color 0.2s;
+  }
+
+  .close-btn:hover {
+    color: #ff4d4d;
+  }
+
+  td[contenteditable="true"] {
+    background-color: #ffffff;
+    border-radius: 4px;
+    border: 2px solid #ffffff;
+    color: #000000;
+  }
+
+  .status-active {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .status-expired {
+    color: #ef4444;
+    font-weight: 600;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-buttons .btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+</style>
+
+<div class="page-header">
+  <h2>👥 Members</h2>
+  <button class="btn btn-add" onclick="openModal()">+ Add Member</button>
+</div>
+
+<div class="table-container">
+  <table id="membersTable" class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Fee</th>
+        <th>Total Paid</th>
+        <th>Pending</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Add Member Modal -->
+<div id="addModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <h3>Add New Member</h3>
+    <input type="number" id="addID" placeholder="Member ID">
+    <input type="text" id="addName" placeholder="Name">
+    <input type="date" id="addDOB" placeholder="DOB">
+    <select id="addType" placeholder="Membership Type">
+      <option value="">Select Membership Type</option>
+      <option value="Monthly">Monthly</option>
+      <option value="Quarterly">Quarterly</option>
+      <option value="Annual">Annual</option>
+      <option value="Trial">Trial</option>
+    </select>
+    <input type="number" id="addFee" placeholder="Fee">
+    <select id="addGymID" placeholder="Select Gym">
+      <option value="">Select Gym</option>
+      <option value="1">FitZone (Bangalore)</option>
+      <option value="2">PowerHouse (Mysore)</option>
+    </select>
+    <input type="date" id="addStart" placeholder="Start Date">
+    <input type="date" id="addEnd" placeholder="End Date">
+    
+    <hr style="border: 1px solid #374151; margin: 15px 0;">
+    <h4 style="margin-bottom: 10px;">Assign Trainer & Plan (Optional)</h4>
+    
+    <select id="addTrainer" placeholder="Select Trainer">
+      <option value="">Select Trainer</option>
+      <option value="101">Dhriti Kumar - Strength Training</option>
+      <option value="102">Anita Sharma - Yoga</option>
+      <option value="103">Karan Patel - Cardio</option>
+    </select>
+    
+    <select id="addPlan" placeholder="Select Workout Plan">
+      <option value="">Select Plan</option>
+      <option value="501">Fat Loss Plan (3 Months)</option>
+      <option value="502">Muscle Gain Plan (6 Months)</option>
+      <option value="503">Flexibility Plan (2 Months)</option>
+    </select>
+    
+    <button onclick="addMember()">Add Member</button>
+  </div>
+</div>
+
+<script>
+async function loadMembers() {
+  const res = await fetch("/api/member_payments");
+  const data = await res.json();
+  const tbody = document.querySelector("#membersTable tbody");
+  tbody.innerHTML = "";
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#9ca3af;">No members found</td></tr>`;
+    return;
+  }
+
+  data.forEach(m => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${m.Member_ID}</td>
+        <td contenteditable="true" data-field="Name">${m.Name}</td>
+        <td contenteditable="true" data-field="Type_of_Membership">${m.Type_of_Membership}</td>
+        <td contenteditable="true" data-field="Fee">${m.Fee}</td>
+        <td>₹${parseFloat(m.Total_Paid).toFixed(2)}</td>
+        <td>₹${parseFloat(m.Pending_Balance).toFixed(2)}</td>
+        <td contenteditable="true" data-field="Membership_Start">${m.Membership_Start}</td>
+        <td contenteditable="true" data-field="Membership_End">${m.Membership_End}</td>
+        <td class="${m.Status === 'Active' ? 'status-active' : 'status-expired'}">${m.Status}</td>
+        <td><button class="btn btn-save" onclick="saveMember(${m.Member_ID}, this)">Save</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function saveMember(id, btn) {
+  const row = btn.closest("tr");
+  const fields = row.querySelectorAll("[contenteditable='true']");
+  const payload = {};
+  fields.forEach(f => payload[f.dataset.field] = f.textContent.trim());
+
+  const res = await fetch(`/api/members/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    alert("✅ Member updated successfully");
+    loadMembers();
+  } else {
+    alert("❌ Error updating member: " + data.error);
+  }
+}
+
+// Modal control
+function openModal() {
+  document.getElementById("addModal").style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById("addModal").style.display = "none";
+}
+
+async function addMember() {
+  const newMember = {
+    Member_ID: document.getElementById("addID").value,
+    Name: document.getElementById("addName").value,
+    DOB: document.getElementById("addDOB").value,
+    Type_of_Membership: document.getElementById("addType").value,
+    Fee: document.getElementById("addFee").value,
+    Gym_ID: document.getElementById("addGymID").value,
+    Membership_Start: document.getElementById("addStart").value,
+    Membership_End: document.getElementById("addEnd").value,
+  };
+
+  // Validate required fields
+  if (!newMember.Member_ID || !newMember.Name || !newMember.Type_of_Membership || !newMember.Fee || !newMember.Gym_ID) {
+    alert("❌ Please fill in all required fields");
+    return;
+  }
+
+  const res = await fetch("/api/members", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newMember)
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    // If trainer and plan are selected, assign them too
+    const trainerId = document.getElementById("addTrainer").value;
+    const planId = document.getElementById("addPlan").value;
+    
+    if (trainerId && planId) {
+      const assignRes = await fetch("/api/assign_member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          Member_ID: newMember.Member_ID,
+          Trainer_ID: trainerId,
+          Plan_ID: planId,
+          Assigned_Date: new Date().toISOString().split('T')[0]
+        })
+      });
+      
+      const assignData = await assignRes.json();
+      if (assignData.success) {
+        alert("✅ Member added and trainer assigned successfully");
+      } else {
+        alert("✅ Member added (trainer assignment failed: " + assignData.error + ")");
+      }
+    } else {
+      alert("✅ Member added successfully");
+    }
+    
+    // Clear form
+    document.getElementById("addID").value = "";
+    document.getElementById("addName").value = "";
+    document.getElementById("addDOB").value = "";
+    document.getElementById("addType").value = "";
+    document.getElementById("addFee").value = "";
+    document.getElementById("addGymID").value = "";
+    document.getElementById("addStart").value = "";
+    document.getElementById("addEnd").value = "";
+    document.getElementById("addTrainer").value = "";
+    document.getElementById("addPlan").value = "";
+    
+    closeModal();
+    loadMembers();
+  } else {
+    alert("❌ Error adding member: " + data.error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadMembers);
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .page-header h2 {
+    font-size: 2rem;
+    color: #ff2e2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .modal-content {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border-radius: 12px;
+    border: 1px solid #374151;
+  }
+
+  .modal-header {
+    background-color: #ff2e2e !important;
+    border-bottom: 1px solid #374151;
+  }
+
+  .form-control,
+  .form-select {
+    background-color: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #ff2e2e;
+    box-shadow: 0 0 8px rgba(255, 46, 46, 0.2);
+    color: #f3f4f6;
+    background-color: #111827;
+  }
+
+  .form-label {
+    color: #f3f4f6;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #374151;
+  }
+
+  .btn-close-white {
+    filter: brightness(0) invert(1);
+  }
+</style>
+
+<div class="page-header">
+  <h2>🏋️ Trainers</h2>
+  {% if session.get('role') != 'viewer' %}
+  <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Trainer</button>
+  {% endif %}
+</div>
+
+<div class="table-container">
+  <table class="table table-striped align-middle" id="trainersTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Specialization</th>
+        <th>Gym ID</th>
+        <th>Active</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Add Trainer Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="addForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Add New Trainer</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="Name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="Email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Specialization</label>
+            <input type="text" name="Specialization" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Gym ID</label>
+            <input type="number" name="Gym_ID" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Active Status</label>
+            <select name="Active" class="form-select">
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-save">Add Trainer</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function loadTrainers() {
+    const res = await fetch("/api/trainers");
+    const data = await res.json();
+    const tbody = document.querySelector("#trainersTable tbody");
+    tbody.innerHTML = "";
+    data.forEach(trainer => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${trainer.Trainer_ID}</td>
+          <td contenteditable="true" data-field="Name">${trainer.Name}</td>
+          <td contenteditable="true" data-field="Email">${trainer.Email}</td>
+          <td contenteditable="true" data-field="Specialization">${trainer.Specialization}</td>
+          <td contenteditable="true" data-field="Gym_ID">${trainer.Gym_ID}</td>
+          <td>
+            <select data-field="Active" class="form-select form-select-sm bg-dark text-light border-0">
+              <option value="1" ${trainer.Active == 1 ? "selected" : ""}>Yes</option>
+              <option value="0" ${trainer.Active == 0 ? "selected" : ""}>No</option>
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-save" onclick="saveTrainer(${trainer.Trainer_ID}, this)">Save</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  async function saveTrainer(trainerId, btn) {
+    const row = btn.closest("tr");
+    const data = {};
+    row.querySelectorAll("[data-field]").forEach(cell => {
+      const key = cell.getAttribute("data-field");
+      data[key] = cell.tagName === "SELECT" ? cell.value : cell.textContent.trim();
+    });
+
+    // Convert 'Yes'/'No' to 1/0 if needed
+    if (data.Active === "Yes") data.Active = 1;
+    if (data.Active === "No") data.Active = 0;
+
+    const res = await fetch(`/api/trainers/${trainerId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (result.success) alert("✅ Trainer updated successfully!");
+    else alert("❌ " + result.error);
+  }
+
+  document.getElementById("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = Object.fromEntries(new FormData(e.target).entries());
+    const res = await fetch("/api/trainers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      alert("✅ Trainer added successfully!");
+      e.target.reset();
+      document.querySelector("#addModal .btn-close").click();
+      loadTrainers();
+    } else {
+      alert("❌ " + result.error);
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", loadTrainers);
+</script>
+{% endblock %}
